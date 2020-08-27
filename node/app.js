@@ -1,19 +1,40 @@
-const { say } = require('../pkg/ssvm_nodejs_starter_lib.js');
+const { say } = require('ssvm_nodejs_starter');
+const Koa = require('koa')
+const app = new Koa()
 
-const http = require('http');
-const url = require('url');
-const hostname = '0.0.0.0';
-const port = 3000;
+const port = 3000
 
-const server = http.createServer((req, res) => {
-  const queryObject = url.parse(req.url,true).query;
-  if (!queryObject['name']) {
-    res.end(`Please use command curl http://${hostname}:${port}/?name=MyName \n`);
-  } else {
-    res.end(say(queryObject['name']) + '\n');
-  }
-});
+// Calling Rust
 
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
+app.use(async (ctx, next) => {
+  ctx.assert(ctx.query.name, 'should have a query param with "name"')
+
+  ctx.state.compliment = say(ctx.query.name)
+  await next()
+})
+
+// Logger
+
+app.use(async (ctx, next) => {
+  await next()
+  const rt = ctx.response.get('X-Response-Time')
+  console.log(`${ctx.method} ${ctx.url} - ${rt}`)
+})
+
+// x-response-time
+
+app.use(async (ctx, next) => {
+  const start = Date.now()
+  await next()
+  const ms = Date.now() - start
+  ctx.set('X-Response-Time', `${ms}ms`)
+})
+
+// response
+
+app.use(async ctx => {
+  ctx.body = JSON.stringify(ctx.state)
+})
+
+app.listen(port)
+
