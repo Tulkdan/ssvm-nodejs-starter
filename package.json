@@ -22,6 +22,7 @@
   "homepage": "https://github.com/Tulkdan/ssvm-nodejs-starter#readme",
   "dependencies": {
     "koa": "^2.13.0",
+    "koa-bodyparser": "^4.3.0",
     "ssvm_nodejs_starter": "file:./pkg"
   }
 }

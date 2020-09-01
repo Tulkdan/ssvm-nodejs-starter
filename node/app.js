@@ -1,17 +1,11 @@
-const { say } = require('ssvm_nodejs_starter');
+const { say, receive_array } = require('ssvm_nodejs_starter');
+const bodyParser = require('koa-bodyparser');
 const Koa = require('koa')
 const app = new Koa()
 
 const port = 3000
 
-// Calling Rust
-
-app.use(async (ctx, next) => {
-  ctx.assert(ctx.query.name, 'should have a query param with "name"')
-
-  ctx.state.compliment = say(ctx.query.name)
-  await next()
-})
+app.use(bodyParser())
 
 // Logger
 
@@ -30,10 +24,18 @@ app.use(async (ctx, next) => {
   ctx.set('X-Response-Time', `${ms}ms`)
 })
 
-// response
+// Calling Rust
 
 app.use(async ctx => {
-  ctx.body = JSON.stringify(ctx.state)
+  if (ctx.method === 'POST') {
+    const { body } = ctx.request
+    ctx.assert(body.numbers, 'should have "numbers" key in the body')
+    const squared = receive_array(body.numbers)
+    ctx.body = JSON.stringify({ transformation: Array.from(squared) })
+  } else {
+    ctx.assert(ctx.query.name, 'should have a query param with "name"')
+    ctx.body = JSON.stringify(say(ctx.query.name))
+  }
 })
 
 app.listen(port)
